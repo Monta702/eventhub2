@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      IMAGE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || 'main-latest' }}
+      IMAGE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || 'v0.2.0' }}
 
     steps:
       - name: Clonar el código
