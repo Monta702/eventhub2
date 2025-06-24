@@ -4,22 +4,31 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-push:
+  push:
     branches:
       - main  # para deploy continuo al mergear PRs a main
-      
+
 jobs:
   build-and-deploy:
-    name: Build & Deploy on Release
+    name: Build & Deploy on Release or Push
     runs-on: ubuntu-latest
 
     steps:
       - name: Clonar el código
         uses: actions/checkout@v3
 
-      - name: Obtener tag del release
+      - name: Definir tag para la imagen Docker
         id: get_tag
-        run: echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            branch=${GITHUB_REF##*/}
+            datetime=$(date +'%Y%m%d%H%M%S')
+            safe_tag="${branch}-${datetime}"
+            safe_tag=$(echo "$safe_tag" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-')
+            echo "tag=$safe_tag" >> $GITHUB_OUTPUT
+          fi
 
       - name: Loguearse en DockerHub
         uses: docker/login-action@v3
@@ -42,4 +51,4 @@ jobs:
       - name: Desplegar en Render
         run: |
           curl -X POST https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID }} \
-            -H 'Authorization: Bearer ${{ secrets.RENDER_API_KEY }}'
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
