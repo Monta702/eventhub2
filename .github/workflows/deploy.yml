@@ -4,7 +4,10 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-
+push:
+    branches:
+      - main  # para deploy continuo al mergear PRs a main
+      
 jobs:
   build-and-deploy:
     name: Build & Deploy on Release
