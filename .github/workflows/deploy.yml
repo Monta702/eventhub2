@@ -3,10 +3,12 @@ name: CD
 on:
   release:
     types: [published]
-  workflow_dispatch:
   push:
     branches:
-      - main  # para deploy continuo al mergear PRs a main
+      - main  # para deploy continuo
+    tags:
+      - 'v*'  # para que funcione cuando hacés git push tag
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -22,8 +24,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF##refs/tags/}" >> $GITHUB_OUTPUT
           else
-            branch=${GITHUB_REF##*/}
+            branch=${GITHUB_REF##*/}  # fallback: branch name
             datetime=$(date +'%Y%m%d%H%M%S')
             safe_tag="${branch}-${datetime}"
             safe_tag=$(echo "$safe_tag" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-')
