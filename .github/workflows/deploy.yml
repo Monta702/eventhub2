@@ -3,12 +3,10 @@ name: CD
 on:
   release:
     types: [published]
+  workflow_dispatch:
   push:
     branches:
-      - main  # para deploy continuo
-    tags:
-      - 'v*'  # para que funcione cuando hacés git push tag
-  workflow_dispatch:
+      - main
 
 jobs:
   build-and-deploy:
@@ -24,10 +22,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
-          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "tag=${GITHUB_REF##refs/tags/}" >> $GITHUB_OUTPUT
           else
-            branch=${GITHUB_REF##*/}  # fallback: branch name
+            branch=${GITHUB_REF##*/}
             datetime=$(date +'%Y%m%d%H%M%S')
             safe_tag="${branch}-${datetime}"
             safe_tag=$(echo "$safe_tag" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-')
@@ -40,7 +36,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Construir imagen Docker con tags del release y latest
+      - name: Construir imagen Docker con tag y latest
         run: |
           docker build \
             -t ${{ secrets.DOCKER_USERNAME }}/eventhub:${{ steps.get_tag.outputs.tag }} \
@@ -53,5 +49,13 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/eventhub:latest
 
       - name: Desplegar en Render
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "ERROR: El secreto RENDER_DEPLOY_HOOK está vacío o mal definido."
+            exit 1
+          fi
+          echo "Desplegando a Render con el hook:"
+          echo "$DEPLOY_HOOK"
+          curl -X POST "$DEPLOY_HOOK"
