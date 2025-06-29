@@ -140,7 +140,7 @@ TIME_ZONE = "America/Argentina/Buenos_Aires"
 USE_TZ = True
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://eventhub-v0-2-0.onrender.com",
+    "https://eventhub-latest-yh38.onrender.com",
     "https://localhost",
     "https://127.0.0.1",
 ]
